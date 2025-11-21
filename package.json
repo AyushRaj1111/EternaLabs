@@ -1,0 +1,32 @@
+{
+  "name": "eterna-labs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx jest",
+    "dev": "npx nodemon --exec npx ts-node src/app.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "@fastify/static": "^8.3.0",
+    "@fastify/websocket": "^11.2.0",
+    "@types/uuid": "^10.0.0",
+    "bullmq": "^5.63.2",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "ioredis": "^5.8.2",
+    "pg": "^8.16.3",
+    "uuid": "^9.0.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/pg": "^8.15.6",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5"
+  }
+}

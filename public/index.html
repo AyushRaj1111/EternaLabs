@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Execution Engine Test</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #4a5568; }
+        input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; }
+        button { background: #3182ce; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; }
+        button:hover { background: #2c5282; }
+        #logs { margin-top: 20px; padding: 15px; background: #2d3748; color: #a0aec0; border-radius: 8px; height: 300px; overflow-y: auto; font-family: monospace; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #4a5568; padding-bottom: 2px; }
+        .status-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 8px; }
+        .status-pending { background: #ecc94b; color: #744210; }
+        .status-routing { background: #4299e1; color: #ebf8ff; }
+        .status-building { background: #9f7aea; color: #faf5ff; }
+        .status-submitted { background: #ed8936; color: #fffaf0; }
+        .status-confirmed { background: #48bb78; color: #f0fff4; }
+        .status-failed { background: #f56565; color: #fff5f5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Order Execution Test</h1>
+        <div class="form-group">
+            <label>Input Token</label>
+            <input type="text" id="inputToken" value="SOL">
+        </div>
+        <div class="form-group">
+            <label>Output Token</label>
+            <input type="text" id="outputToken" value="USDC">
+        </div>
+        <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="amount" value="1.5" step="0.1">
+        </div>
+        <button onclick="submitOrder()">Submit Order</button>
+
+        <div id="logs">
+            <div class="log-entry">Waiting for orders...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, status = 'info') {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const time = new Date().toLocaleTimeString();
+            let statusHtml = '';
+            if (status !== 'info') {
+                statusHtml = `<span class="status-tag status-${status}">${status.toUpperCase()}</span>`;
+            }
+            
+            entry.innerHTML = `<span style="color: #718096">[${time}]</span> ${statusHtml} ${message}`;
+            logs.prepend(entry);
+        }
+
+        async function submitOrder() {
+            const inputToken = document.getElementById('inputToken').value;
+            const outputToken = document.getElementById('outputToken').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            try {
+                log('Submitting order...', 'pending');
+                const response = await fetch('/api/orders/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inputToken, outputToken, amount })
+                });
+                
+                const data = await response.json();
+                
+                if (data.orderId) {
+                    log(`Order created: ${data.orderId}`, 'pending');
+                    connectWebSocket(data.orderId);
+                } else {
+                    log(`Error: ${JSON.stringify(data)}`, 'failed');
+                }
+            } catch (e) {
+                log(`Network Error: ${e.message}`, 'failed');
+            }
+        }
+
+        function connectWebSocket(orderId) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/orders/execute?orderId=${orderId}`;
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => log('WebSocket connected', 'info');
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.status) {
+                    let details = '';
+                    if (data.data) {
+                        details = JSON.stringify(data.data);
+                    }
+                    log(`Status Update: ${details}`, data.status);
+                    
+                    if (data.status === 'confirmed' || data.status === 'failed') {
+                        ws.close();
+                    }
+                }
+            };
+
+            ws.onclose = () => log('WebSocket disconnected', 'info');
+        }
+    </script>
+</body>
+</html>
