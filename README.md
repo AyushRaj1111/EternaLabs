@@ -119,6 +119,12 @@ curl -X POST http://localhost:3000/api/orders/execute \
 
 Connect to `ws://localhost:3000/api/orders/execute?orderId=<ORDER_ID>` to receive real-time updates.
 
+## Deployment
+
+Detailed deployment instructions for Render.com can be found in [DEPLOY.md](DEPLOY.md).
+
+**Public URL**: `[INSERT YOUR RENDER URL HERE]`
+
 ## Testing
 
 Run unit tests:

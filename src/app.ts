@@ -27,8 +27,9 @@ const start = async () => {
     const server = buildApp();
     try {
         await initDb();
-        await server.listen({ port: 3000, host: '0.0.0.0' });
-        console.log('Server running at http://localhost:3000');
+        const port = parseInt(process.env.PORT || '3000');
+        await server.listen({ port, host: '0.0.0.0' });
+        console.log(`Server running at http://0.0.0.0:${port}`);
 
         // Ensure worker is running
         console.log('Worker started:', worker.name);
