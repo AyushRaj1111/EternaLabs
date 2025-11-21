@@ -39,26 +39,32 @@ export async function orderRoutes(fastify: FastifyInstance) {
         const query = req.query as { orderId?: string };
         const orderId = query.orderId;
 
+        // Handle potential difference in connection object structure
+        const socket = connection.socket || connection;
+
         if (!orderId) {
-            connection.socket.send(JSON.stringify({ error: 'Missing orderId' }));
-            connection.socket.close();
+            socket.send(JSON.stringify({ error: 'Missing orderId' }));
+            socket.close();
             return;
         }
 
         console.log(`Client connected for order ${orderId}`);
 
         // Send initial status
-        connection.socket.send(JSON.stringify({ status: 'connected', orderId }));
+        socket.send(JSON.stringify({ status: 'connected', orderId }));
 
         const unsubscribe = subscribeToOrderUpdates(orderId, (message) => {
-            connection.socket.send(JSON.stringify(message));
+            // Ensure socket is open before sending
+            if (socket.readyState === 1) { // OPEN
+                socket.send(JSON.stringify(message));
+            }
             if (message.status === 'confirmed' || message.status === 'failed') {
                 // Optional: close connection after final state
-                // connection.socket.close();
+                // socket.close();
             }
         });
 
-        connection.socket.on('close', () => {
+        socket.on('close', () => {
             console.log(`Client disconnected for order ${orderId}`);
             unsubscribe();
         });
